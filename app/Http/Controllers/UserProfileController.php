@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\UserProfile;
+use App\Models\UserProfileCertificate;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -38,7 +39,8 @@ class UserProfileController extends Controller
             'ijazah_terakhir' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'ktp' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'portofolio' => 'nullable|file|mimes:pdf,doc,docx,zip|max:10240',
-            'sertifikat_pendukung' => 'nullable|file|mimes:pdf,jpg,jpeg,png,zip|max:10240',
+            'sertifikat_pendukung' => 'nullable|array',
+            'sertifikat_pendukung.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
         if ($request->hasFile('cv')) {
@@ -53,11 +55,22 @@ class UserProfileController extends Controller
         if ($request->hasFile('portofolio')) {
             $validated['portofolio'] = $request->file('portofolio')->store('user-profiles/portofolio', 'public');
         }
-        if ($request->hasFile('sertifikat_pendukung')) {
-            $validated['sertifikat_pendukung'] = $request->file('sertifikat_pendukung')->store('user-profiles/sertifikat', 'public');
-        }
 
-        UserProfile::create($validated);
+        // Remove sertifikat_pendukung from validated data before creating profile
+        unset($validated['sertifikat_pendukung']);
+
+        $userProfile = UserProfile::create($validated);
+
+        // Handle multiple certificates
+        if ($request->hasFile('sertifikat_pendukung')) {
+            foreach ($request->file('sertifikat_pendukung') as $file) {
+                $filePath = $file->store('user-profiles/sertifikat', 'public');
+                $userProfile->certificates()->create([
+                    'file_path' => $filePath,
+                    'file_name' => $file->getClientOriginalName(),
+                ]);
+            }
+        }
 
         return redirect()->route('user-profiles.index')->with('success', 'Profile berhasil dibuat!');
     }
@@ -88,7 +101,10 @@ class UserProfileController extends Controller
             'ijazah_terakhir' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'ktp' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'portofolio' => 'nullable|file|mimes:pdf,doc,docx,zip|max:10240',
-            'sertifikat_pendukung' => 'nullable|file|mimes:pdf,jpg,jpeg,png,zip|max:10240',
+            'sertifikat_pendukung' => 'nullable|array',
+            'sertifikat_pendukung.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'delete_certificates' => 'nullable|array',
+            'delete_certificates.*' => 'exists:user_profile_certificates,id',
         ]);
 
         if ($request->hasFile('cv')) {
@@ -107,12 +123,34 @@ class UserProfileController extends Controller
             if ($userProfile->portofolio) Storage::disk('public')->delete($userProfile->portofolio);
             $validated['portofolio'] = $request->file('portofolio')->store('user-profiles/portofolio', 'public');
         }
-        if ($request->hasFile('sertifikat_pendukung')) {
-            if ($userProfile->sertifikat_pendukung) Storage::disk('public')->delete($userProfile->sertifikat_pendukung);
-            $validated['sertifikat_pendukung'] = $request->file('sertifikat_pendukung')->store('user-profiles/sertifikat', 'public');
-        }
+
+        // Remove array fields before updating profile
+        unset($validated['sertifikat_pendukung']);
+        unset($validated['delete_certificates']);
 
         $userProfile->update($validated);
+
+        // Delete selected certificates
+        if ($request->has('delete_certificates')) {
+            foreach ($request->delete_certificates as $certificateId) {
+                $certificate = UserProfileCertificate::find($certificateId);
+                if ($certificate && $certificate->user_profile_id == $userProfile->id) {
+                    Storage::disk('public')->delete($certificate->file_path);
+                    $certificate->delete();
+                }
+            }
+        }
+
+        // Handle new certificates upload
+        if ($request->hasFile('sertifikat_pendukung')) {
+            foreach ($request->file('sertifikat_pendukung') as $file) {
+                $filePath = $file->store('user-profiles/sertifikat', 'public');
+                $userProfile->certificates()->create([
+                    'file_path' => $filePath,
+                    'file_name' => $file->getClientOriginalName(),
+                ]);
+            }
+        }
 
         return redirect()->route('user-profiles.index')->with('success', 'Profile berhasil diupdate!');
     }
@@ -126,7 +164,11 @@ class UserProfileController extends Controller
         if ($userProfile->ijazah_terakhir) Storage::disk('public')->delete($userProfile->ijazah_terakhir);
         if ($userProfile->ktp) Storage::disk('public')->delete($userProfile->ktp);
         if ($userProfile->portofolio) Storage::disk('public')->delete($userProfile->portofolio);
-        if ($userProfile->sertifikat_pendukung) Storage::disk('public')->delete($userProfile->sertifikat_pendukung);
+
+        // Delete all certificates
+        foreach ($userProfile->certificates as $certificate) {
+            Storage::disk('public')->delete($certificate->file_path);
+        }
 
         $userProfile->delete();
 

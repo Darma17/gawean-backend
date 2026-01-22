@@ -57,8 +57,8 @@ class UserSeeder extends Seeder
 
         // Regular Users
         User::create([
-            'nama' => 'Budi Santoso',
-            'email' => 'budi.santoso@gmail.com',
+            'nama' => 'Damore Velnava',
+            'email' => 'bukuku.real@gmail.com',
             'password' => Hash::make('password123'),
             'nomor_telepon' => '081234567001',
             'alamat' => 'Jl. Melati No. 10, Surabaya',
