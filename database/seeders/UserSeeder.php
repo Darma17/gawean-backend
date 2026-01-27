@@ -24,36 +24,58 @@ class UserSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        // Company Users
+       // Company Users
+
         User::create([
-            'nama' => 'PT Teknologi Indonesia',
-            'email' => 'hrd@teknologi-indonesia.com',
+            'nama' => 'PT Pertamina (Persero)',
+            'email' => 'recruitment@pertamina.co.id',
             'password' => Hash::make('password123'),
-            'nomor_telepon' => '021234567891',
-            'alamat' => 'Jl. Sudirman No. 100, Jakarta Selatan',
+            'nomor_telepon' => '0213815111',
+            'alamat' => 'Jl. Medan Merdeka Timur No. 1A, Jakarta Pusat',
             'role' => 'perusahaan',
             'is_active' => true,
         ]);
 
         User::create([
-            'nama' => 'CV Digital Kreasi',
-            'email' => 'recruitment@digitalkreasi.com',
+            'nama' => 'PT PLN (Persero)',
+            'email' => 'recruitment@pln.co.id',
             'password' => Hash::make('password123'),
-            'nomor_telepon' => '021234567892',
-            'alamat' => 'Jl. Gatot Subroto No. 50, Jakarta',
+            'nomor_telepon' => '0217261122',
+            'alamat' => 'Jl. Trunojoyo Blok M I No. 135, Jakarta Selatan',
             'role' => 'perusahaan',
             'is_active' => true,
         ]);
 
         User::create([
-            'nama' => 'PT Maju Bersama',
-            'email' => 'hr@majubersama.co.id',
+            'nama' => 'PT IDStar Cipta Teknologi',
+            'email' => 'hr@idstar.co.id',
             'password' => Hash::make('password123'),
-            'nomor_telepon' => '022345678901',
-            'alamat' => 'Jl. Asia Afrika No. 25, Bandung',
+            'nomor_telepon' => '02129012345',
+            'alamat' => 'Jl. TB Simatupang No. 18, Jakarta Selatan',
             'role' => 'perusahaan',
             'is_active' => true,
         ]);
+
+        User::create([
+            'nama' => 'PT Bank Central Asia Tbk',
+            'email' => 'recruitment@bca.co.id',
+            'password' => Hash::make('password123'),
+            'nomor_telepon' => '02123588000',
+            'alamat' => 'Menara BCA, Jl. MH Thamrin No. 1, Jakarta Pusat',
+            'role' => 'perusahaan',
+            'is_active' => true,
+        ]);
+
+        User::create([
+            'nama' => 'PT Telekomunikasi Selular (Telkomsel)',
+            'email' => 'recruitment@telkomsel.co.id',
+            'password' => Hash::make('password123'),
+            'nomor_telepon' => '0215240811',
+            'alamat' => 'Jl. Jend. Gatot Subroto Kav. 52, Jakarta Selatan',
+            'role' => 'perusahaan',
+            'is_active' => true,
+        ]);
+
 
         // Regular Users
         User::create([

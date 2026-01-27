@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Job extends Model
 {
@@ -41,6 +42,21 @@ class Job extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Get the company profile through user.
+     */
+    public function companyProfile()
+    {
+        return $this->hasOneThrough(
+            CompanyProfile::class,
+            User::class,
+            'id',        // Foreign key on users table
+            'user_id',   // Foreign key on company_profiles table
+            'user_id',   // Local key on jobs_listing table
+            'id'         // Local key on users table
+        );
     }
 
     /**

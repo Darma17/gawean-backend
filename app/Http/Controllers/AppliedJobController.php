@@ -36,7 +36,7 @@ class AppliedJobController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'job_id' => 'required|exists:jobs_listing,id',
-            'status' => 'required|in:pending,reviewed,interview,accepted,rejected',
+            'status' => 'required|in:pending,reviewed,interview,accepted,rejected,cancelled',
         ]);
 
         // Check if already applied
@@ -79,7 +79,7 @@ class AppliedJobController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'job_id' => 'required|exists:jobs_listing,id',
-            'status' => 'required|in:pending,reviewed,interview,accepted,rejected',
+            'status' => 'required|in:pending,reviewed,interview,accepted,rejected,cancelled',
         ]);
 
         // Check if already applied (excluding current record)

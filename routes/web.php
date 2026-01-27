@@ -38,4 +38,6 @@ Route::middleware('auth')->group(function () {
     Route::resource('jobs', JobController::class);
     Route::resource('favorite-jobs', FavoriteJobController::class);
     Route::resource('applied-jobs', AppliedJobController::class);
+    Route::post('users/{user}/ban', [UserController::class, 'ban'])->name('users.ban');
+    Route::post('users/{user}/unban', [UserController::class, 'unban'])->name('users.unban');
 });

@@ -3,6 +3,11 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\UserProfileController;
+use App\Http\Controllers\Api\JobController;
+use App\Http\Controllers\Api\FavoriteJobController;
+use App\Http\Controllers\Api\AppliedJobController;
+use App\Http\Controllers\Api\CompanyProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -12,7 +17,7 @@ use App\Http\Controllers\Api\AuthController;
 
 // Route publik untuk autentikasi user
 Route::prefix('user')->group(function () {
-    // Login - mengecek email, password, dan role = user, lalu kirim OTP
+    // Login - mengecek email, password, dan role (user/perusahaan), lalu kirim OTP
     Route::post('/login', [AuthController::class, 'login']);
     
     // Verifikasi OTP
@@ -20,6 +25,9 @@ Route::prefix('user')->group(function () {
     
     // Kirim ulang OTP
     Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
+    
+    // Register user baru
+    Route::post('/register', [AuthController::class, 'register']);
 });
 
 // Route yang memerlukan autentikasi
@@ -29,4 +37,47 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
     
     // Logout
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Profile routes
+    Route::get('/profile', [UserProfileController::class, 'getProfile']);
+    Route::post('/profile', [UserProfileController::class, 'updateProfile']);
+    Route::delete('/profile/certificate/{id}', [UserProfileController::class, 'deleteCertificate']);
+
+    // Company Profile routes (khusus untuk role perusahaan)
+    Route::get('/company-profile', [CompanyProfileController::class, 'getProfile']);
+    Route::post('/company-profile', [CompanyProfileController::class, 'updateProfile']);
+
+    // Company Jobs routes (khusus untuk role perusahaan)
+    Route::get('/company/jobs/count', [JobController::class, 'countCompanyJobs']);
+    Route::get('/company/jobs', [JobController::class, 'getCompanyJobs']);
+    Route::get('/company/jobs/applicants/count', [JobController::class, 'countJobApplicants']);
+
+    // Favorite Jobs routes
+    Route::get('/favorites', [FavoriteJobController::class, 'index']);
+    Route::post('/favorites', [FavoriteJobController::class, 'store']);
+    Route::post('/favorites/toggle', [FavoriteJobController::class, 'toggle']);
+    Route::get('/favorites/check/{jobId}', [FavoriteJobController::class, 'check']);
+    Route::delete('/favorites/{jobId}', [FavoriteJobController::class, 'destroy']);
+
+    // Applied Jobs routes
+    Route::get('/applied', [AppliedJobController::class, 'index']);
+    Route::post('/applied', [AppliedJobController::class, 'store']);
+    Route::get('/applied/count', [AppliedJobController::class, 'count']);
+    Route::get('/applied/check/{jobId}', [AppliedJobController::class, 'check']);
+    Route::get('/applied/{id}', [AppliedJobController::class, 'show']);
+    Route::delete('/applied/{id}', [AppliedJobController::class, 'destroy']);
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| API Routes untuk Jobs
+|--------------------------------------------------------------------------
+*/
+
+// Route publik untuk melihat lowongan
+Route::prefix('jobs')->group(function () {
+    Route::get('/', [JobController::class, 'index']);
+    Route::get('/cities', [JobController::class, 'getCities']);
+    Route::get('/{id}', [JobController::class, 'show']);
 });

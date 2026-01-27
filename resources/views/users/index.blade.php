@@ -87,6 +87,21 @@
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
+                                @if($user->is_active)
+                                <form action="{{ route('users.ban', $user) }}" method="POST" class="inline" onsubmit="return confirm('Ban user ini? User akan dinonaktifkan!')">
+                                    @csrf
+                                    <button type="submit" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Ban User">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                </form>
+                                @else
+                                <form action="{{ route('users.unban', $user) }}" method="POST" class="inline" onsubmit="return confirm('Aktifkan kembali user ini?')">
+                                    @csrf
+                                    <button type="submit" class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Unban User">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                </form>
+                                @endif
                             </div>
                         </td>
                     </tr>

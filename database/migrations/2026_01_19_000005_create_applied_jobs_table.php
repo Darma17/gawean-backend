@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('job_id')->constrained('jobs_listing')->onDelete('cascade');
-            $table->enum('status', ['pending', 'reviewed', 'interview', 'accepted', 'rejected'])->default('pending');
+            $table->enum('status', ['pending', 'reviewed', 'interview', 'accepted', 'rejected', 'cancelled'])->default('pending');
             $table->timestamps();
 
             // Prevent duplicate applications

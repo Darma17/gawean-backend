@@ -14,9 +14,9 @@ use Carbon\Carbon;
 class AuthController extends Controller
 {
     /**
-     * Login user dengan role = user
-     * Mengecek email, password, dan role
-     * Jika valid, kirim OTP ke email
+     * Login user (user/perusahaan) tanpa perlu mengirim role
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function login(Request $request)
     {
@@ -33,16 +33,14 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Cari user berdasarkan email dan role = user
-        $user = User::where('email', $request->email)
-                    ->where('role', 'user')
-                    ->first();
+        // Cari user berdasarkan email
+        $user = User::where('email', $request->email)->first();
 
         // Cek apakah user ditemukan
         if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Email tidak terdaftar atau bukan akun user'
+                'message' => 'Email tidak terdaftar'
             ], 401);
         }
 
@@ -87,7 +85,88 @@ class AuthController extends Controller
             'message' => 'OTP telah dikirim ke email Anda',
             'data' => [
                 'email' => $user->email,
-                'otp_expires_in' => '5 menit'
+                'otp_expires_in' => '5 menit',
+                'role' => $user->role
+            ]
+        ], 200);
+    }
+
+    /**
+     * Login user dengan role = perusahaan (company)
+     * Mengecek email, password, dan role
+     * Jika valid, kirim OTP ke email
+     */
+    public function loginCompany(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Cari user berdasarkan email dan role = perusahaan
+        $user = User::where('email', $request->email)
+                    ->where('role', 'perusahaan')
+                    ->first();
+
+        // Cek apakah user ditemukan
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email tidak terdaftar atau bukan akun perusahaan'
+            ], 401);
+        }
+
+        // Cek password
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password salah'
+            ], 401);
+        }
+
+        // Cek apakah user aktif
+        if (!$user->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun Anda tidak aktif. Silakan hubungi admin.'
+            ], 403);
+        }
+
+        // Generate OTP 6 digit
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        
+        // Simpan OTP ke database dengan waktu kadaluarsa 5 menit
+        $user->update([
+            'otp_code' => Hash::make($otp),
+            'otp_expires_at' => Carbon::now()->addMinutes(5)
+        ]);
+
+        // Kirim OTP ke email
+        try {
+            Mail::to($user->email)->send(new OtpMail($otp, $user->nama));
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengirim OTP ke email. Silakan coba lagi.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP telah dikirim ke email Anda',
+            'data' => [
+                'email' => $user->email,
+                'otp_expires_in' => '5 menit',
+                'role' => 'perusahaan'
             ]
         ], 200);
     }
@@ -95,7 +174,7 @@ class AuthController extends Controller
     /**
      * Verifikasi OTP
      * Mengecek kode OTP yang dikirim user
-     * Jika valid, kembalikan token untuk autentikasi
+     * Jika valid, kembalikan token untuk autentikasi dan data user beserta rolenya
      */
     public function verifyOtp(Request $request)
     {
@@ -112,10 +191,8 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Cari user berdasarkan email dan role = user
-        $user = User::where('email', $request->email)
-                    ->where('role', 'user')
-                    ->first();
+        // Cari user berdasarkan email
+        $user = User::where('email', $request->email)->first();
 
         if (!$user) {
             return response()->json([
@@ -289,5 +366,64 @@ class AuthController extends Controller
                 'role' => $user->role,
             ]
         ], 200);
+    }
+
+    /**
+     * Register user baru (role user), kirim OTP ke email
+     */
+    public function register(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'nama' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'nomor_telepon' => 'required|string|max:20',
+            'password' => 'required|string|min:6',
+            'alamat' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Generate OTP 6 digit
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Buat user baru dengan role user
+        $user = User::create([
+            'nama' => $request->nama,
+            'email' => $request->email,
+            'nomor_telepon' => $request->nomor_telepon,
+            'password' => bcrypt($request->password),
+            'alamat' => $request->alamat,
+            'role' => 'user',
+            'is_active' => true,
+            'otp_code' => Hash::make($otp),
+            'otp_expires_at' => Carbon::now()->addMinutes(5),
+        ]);
+
+        // Kirim OTP ke email
+        try {
+            Mail::to($user->email)->send(new OtpMail($otp, $user->nama));
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengirim OTP ke email. Silakan coba lagi.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registrasi berhasil. OTP telah dikirim ke email Anda',
+            'data' => [
+                'email' => $user->email,
+                'otp_expires_in' => '5 menit',
+                'role' => $user->role
+            ]
+        ], 201);
     }
 }

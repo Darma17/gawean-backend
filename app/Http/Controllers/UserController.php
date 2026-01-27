@@ -9,7 +9,25 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
-{
+    /**
+     * Unban a user (set is_active = 1)
+     */
+    {
+    public function unban(User $user)
+    {
+        $user->is_active = 1;
+        $user->save();
+        return redirect()->back()->with('success', 'User berhasil diaktifkan kembali.');
+    }
+    /**
+     * Ban a user (set is_active = 0)
+     */
+    public function ban(User $user)
+    {
+        $user->is_active = 0;
+        $user->save();
+        return redirect()->back()->with('success', 'User berhasil dibanned (dinonaktifkan).');
+    }
     /**
      * Display a listing of the resource.
      */
