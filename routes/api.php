@@ -50,6 +50,11 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
     // Company Jobs routes (khusus untuk role perusahaan)
     Route::get('/company/jobs/count', [JobController::class, 'countCompanyJobs']);
     Route::get('/company/jobs', [JobController::class, 'getCompanyJobs']);
+    Route::post('/company/jobs', [JobController::class, 'store']);
+    Route::get('/company/jobs/{jobId}/applicants', [JobController::class, 'getJobApplicants']);
+    Route::get('/company/jobs/{jobId}/applicants/{applicantId}/detail', [JobController::class, 'getApplicantDetail']);
+    Route::patch('/company/jobs/{jobId}/applicants/{applicantId}/status', [JobController::class, 'updateApplicantStatus']);
+    Route::patch('/company/jobs/{jobId}/applicants/{applicantId}/reject', [JobController::class, 'rejectApplicant']);
     Route::get('/company/jobs/applicants/count', [JobController::class, 'countJobApplicants']);
 
     // Favorite Jobs routes

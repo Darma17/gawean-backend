@@ -81,13 +81,15 @@ class AppliedJobController extends Controller
         $userId = $request->user()->id;
         $jobId = $validated['job_id'];
 
-        // Check if user already has 3 applied jobs
-        $appliedCount = AppliedJob::where('user_id', $userId)->count();
+        // Check if user already has 5 applied jobs (excluding cancelled and rejected)
+        $appliedCount = AppliedJob::where('user_id', $userId)
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->count();
 
-        if ($appliedCount >= 3) {
+        if ($appliedCount >= 5) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda sudah mencapai batas maksimal 3 lamaran pekerjaan. Hapus salah satu lamaran untuk melamar pekerjaan baru.',
+                'message' => 'Anda sudah mencapai batas maksimal 5 lamaran pekerjaan. Hapus salah satu lamaran untuk melamar pekerjaan baru.',
             ], 422);
         }
 
@@ -227,14 +229,16 @@ class AppliedJobController extends Controller
      */
     public function count(Request $request): JsonResponse
     {
-        $count = AppliedJob::where('user_id', $request->user()->id)->count();
+        $count = AppliedJob::where('user_id', $request->user()->id)
+            ->whereNotIn('status', ['cancelled', 'rejected', 'accepted'])
+            ->count();
 
         return response()->json([
             'success' => true,
             'data' => [
                 'count' => $count,
-                'max_limit' => 3,
-                'remaining' => max(0, 3 - $count),
+                'max_limit' => 5,
+                'remaining' => max(0, 5 - $count),
             ],
         ]);
     }
