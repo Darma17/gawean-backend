@@ -10,7 +10,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use App\Models\AppliedJob;
 use Illuminate\Queue\SerializesModels;
 
-class RejectionNotification extends Mailable
+class JobAcceptance extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -30,7 +30,7 @@ class RejectionNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Pemberitahuan Penolakan Lamaran - ' . $this->appliedJob->job->title,
+            subject: 'Selamat! Anda Diterima di ' . $this->appliedJob->job->user->nama,
         );
     }
 
@@ -40,7 +40,7 @@ class RejectionNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            html: 'emails.rejection_notification',
+            html: 'emails.job_acceptance',
             with: [
                 'appliedJob' => $this->appliedJob,
             ],

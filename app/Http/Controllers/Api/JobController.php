@@ -7,6 +7,7 @@ use App\Models\Job;
 use App\Models\AppliedJob;
 use App\Mail\InterviewInvitation;
 use App\Mail\RejectionNotification;
+use App\Mail\JobAcceptance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -125,6 +126,57 @@ class JobController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data pekerjaan perusahaan berhasil diambil',
+            'data' => $data,
+        ]);
+    }
+
+    /**
+     * Get detailed information for a specific job created by the authenticated company
+     */
+    public function getJobDetailCompany(Request $request, $jobId)
+    {
+        $user = $request->user();
+
+        // Pastikan user adalah perusahaan
+        if ($user->role !== 'perusahaan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak. Hanya perusahaan yang dapat mengakses.',
+            ], 403);
+        }
+
+        // Cek apakah job milik perusahaan ini
+        $job = Job::where('id', $jobId)
+            ->where('user_id', $user->id)
+            ->with(['appliedJobs.user'])
+            ->first();
+
+        if (!$job) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pekerjaan tidak ditemukan atau tidak milik perusahaan Anda.',
+            ], 404);
+        }
+
+        $data = [
+            'id' => $job->id,
+            'title' => $job->title,
+            'lokasi_kerja' => $job->lokasi_kerja,
+            'tipe' => $job->tipe,
+            'jumlah_lowongan' => $job->jumlah_lowongan,
+            'bidang' => $job->bidang,
+            'skill_yang_dibutuhkan' => $job->skill_yang_dibutuhkan,
+            'gaji' => $job->gaji,
+            'jadwal_kerja' => $job->jadwal_kerja,
+            'jam_kerja' => $job->jam_kerja,
+            'deskripsi' => $job->deskripsi,
+            'created_at' => $job->created_at,
+            'updated_at' => $job->updated_at
+        ];
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail pekerjaan berhasil diambil',
             'data' => $data,
         ]);
     }
@@ -269,10 +321,10 @@ class JobController extends Controller
             ], 404);
         }
 
-        // Ambil pelamar dengan data dasar (kecuali yang rejected dan cancelled)
+        // Ambil pelamar dengan data dasar (kecuali yang rejected, cancelled, dan accepted)
         $applicants = AppliedJob::with('user')
             ->where('job_id', $jobId)
-            ->whereNotIn('status', ['rejected', 'cancelled'])
+            ->whereNotIn('status', ['rejected', 'cancelled', 'accepted'])
             ->get();
 
         $data = $applicants->map(function ($applied) {
@@ -348,6 +400,12 @@ class JobController extends Controller
             'foto_profile' => $applicant->foto_profile ? asset('storage/' . $applicant->foto_profile) : null,
             'status' => $appliedJob->status,
             'applied_at' => $appliedJob->created_at,
+            'interview_details' => $appliedJob->status === 'interview' || $appliedJob->status === 'confirm_accepted' || $appliedJob->status === 'accepted' ? [
+                'date' => $appliedJob->interview_date,
+                'time' => $appliedJob->interview_time,
+                'link' => $appliedJob->interview_link,
+                'message' => $appliedJob->interview_message,
+            ] : null,
             'profile' => $profile ? [
                 'cv' => $profile->cv ? asset('storage/' . $profile->cv) : null,
                 'ijazah_terakhir' => $profile->ijazah_terakhir ? asset('storage/' . $profile->ijazah_terakhir) : null,
@@ -414,6 +472,7 @@ class JobController extends Controller
         $currentStatus = $appliedJob->status;
         $newStatus = null;
         $sendEmail = false;
+        $emailType = null; // 'interview' or 'acceptance'
 
         // Logic untuk mengubah status
         switch ($currentStatus) {
@@ -421,11 +480,28 @@ class JobController extends Controller
                 $newStatus = 'reviewed';
                 break;
             case 'reviewed':
+                // Validasi input untuk interview
+                $validated = $request->validate([
+                    'interview_date' => 'required|date|after:today',
+                    'interview_time' => 'required|date_format:H:i',
+                    'interview_link' => 'required|url',
+                    'interview_message' => 'nullable|string|max:1000',
+                ]);
+
                 $newStatus = 'interview';
                 $sendEmail = true;
+                $emailType = 'interview';
+
+                // Simpan detail interview
+                $appliedJob->interview_date = $validated['interview_date'];
+                $appliedJob->interview_time = $validated['interview_time'];
+                $appliedJob->interview_link = $validated['interview_link'];
+                $appliedJob->interview_message = $validated['interview_message'];
                 break;
             case 'interview':
-                $newStatus = 'accepted';
+                $newStatus = 'confirm_accepted';
+                $sendEmail = true;
+                $emailType = 'acceptance';
                 break;
             default:
                 return response()->json([
@@ -438,18 +514,17 @@ class JobController extends Controller
         $appliedJob->status = $newStatus;
         $appliedJob->save();
 
-        // Jika status berubah ke accepted, kurangi jumlah lowongan
-        if ($newStatus === 'accepted') {
-            $job->decrement('jumlah_lowongan');
-        }
-
-        // Kirim email jika dari reviewed ke interview
+        // Kirim email berdasarkan tipe
         if ($sendEmail) {
             try {
-                Mail::to($appliedJob->user->email)->send(new InterviewInvitation($appliedJob));
+                if ($emailType === 'interview') {
+                    Mail::to($appliedJob->user->email)->send(new InterviewInvitation($appliedJob));
+                } elseif ($emailType === 'acceptance') {
+                    Mail::to($appliedJob->user->email)->send(new JobAcceptance($appliedJob));
+                }
             } catch (\Exception $e) {
                 // Log error tapi jangan gagal request
-                Log::error('Failed to send interview invitation email: ' . $e->getMessage());
+                Log::error('Failed to send email: ' . $e->getMessage());
             }
         }
 

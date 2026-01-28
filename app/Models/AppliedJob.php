@@ -14,6 +14,10 @@ class AppliedJob extends Model
         'user_id',
         'job_id',
         'status',
+        'interview_date',
+        'interview_time',
+        'interview_link',
+        'interview_message',
     ];
 
     /**

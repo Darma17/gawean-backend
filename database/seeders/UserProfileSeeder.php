@@ -19,7 +19,6 @@ class UserProfileSeeder extends Seeder
             'ijazah_terakhir' => null,
             'ktp' => null,
             'portofolio' => null,
-            'sertifikat_pendukung' => null,
         ]);
 
         // Profile for Siti Rahayu (user_id: 6)
@@ -29,7 +28,6 @@ class UserProfileSeeder extends Seeder
             'ijazah_terakhir' => null,
             'ktp' => null,
             'portofolio' => null,
-            'sertifikat_pendukung' => null,
         ]);
 
         // Profile for Ahmad Hidayat (user_id: 7)
@@ -39,7 +37,6 @@ class UserProfileSeeder extends Seeder
             'ijazah_terakhir' => null,
             'ktp' => null,
             'portofolio' => null,
-            'sertifikat_pendukung' => null,
         ]);
 
         // Profile for Dewi Lestari (user_id: 8)
@@ -49,7 +46,6 @@ class UserProfileSeeder extends Seeder
             'ijazah_terakhir' => null,
             'ktp' => null,
             'portofolio' => null,
-            'sertifikat_pendukung' => null,
         ]);
 
         // Profile for Rudi Hermawan (user_id: 9)
@@ -59,7 +55,6 @@ class UserProfileSeeder extends Seeder
             'ijazah_terakhir' => null,
             'ktp' => null,
             'portofolio' => null,
-            'sertifikat_pendukung' => null,
         ]);
     }
 }

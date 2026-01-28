@@ -14,7 +14,7 @@ class JobSeeder extends Seeder
     public function run(): void
     {
         // Ambil perusahaan berdasarkan email (pasti unik & stabil)
-        $pertamina = User::where('email', 'recruitment@pertamina.co.id')->first();
+        $pertamina = User::where('email', 'darma1748darma@gmail.com')->first();
         $pln       = User::where('email', 'recruitment@pln.co.id')->first();
         $idstar    = User::where('email', 'hr@idstar.co.id')->first();
         $bca       = User::where('email', 'recruitment@bca.co.id')->first();

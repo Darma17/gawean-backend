@@ -242,4 +242,77 @@ class AppliedJobController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Confirm job offer (accept the job)
+     */
+    public function confirmOffer(Request $request, $id): JsonResponse
+    {
+        $appliedJob = AppliedJob::with('job')->where('user_id', $request->user()->id)->where('id', $id)->first();
+
+        if (!$appliedJob) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lamaran tidak ditemukan',
+            ], 404);
+        }
+
+        if ($appliedJob->status !== 'confirm_accepted') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status lamaran tidak memungkinkan konfirmasi',
+            ], 400);
+        }
+
+        // Update status to accepted
+        $appliedJob->status = 'accepted';
+        $appliedJob->save();
+
+        // Kurangi jumlah lowongan
+        $appliedJob->job->decrement('jumlah_lowongan');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Penawaran pekerjaan berhasil diterima',
+            'data' => [
+                'id' => $appliedJob->id,
+                'status' => $appliedJob->status,
+            ],
+        ]);
+    }
+
+    /**
+     * Reject job offer
+     */
+    public function rejectOffer(Request $request, $id): JsonResponse
+    {
+        $appliedJob = AppliedJob::where('user_id', $request->user()->id)->where('id', $id)->first();
+
+        if (!$appliedJob) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lamaran tidak ditemukan',
+            ], 404);
+        }
+
+        if ($appliedJob->status !== 'confirm_accepted') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status lamaran tidak memungkinkan penolakan',
+            ], 400);
+        }
+
+        // Update status to cancelled
+        $appliedJob->status = 'cancelled';
+        $appliedJob->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Penawaran pekerjaan berhasil ditolak',
+            'data' => [
+                'id' => $appliedJob->id,
+                'status' => $appliedJob->status,
+            ],
+        ]);
+    }
 }

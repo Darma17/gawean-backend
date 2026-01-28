@@ -20,7 +20,17 @@
         <li>Tipe: {{ $appliedJob->job->tipe }}</li>
     </ul>
     
-    <p>Informasi lebih lanjut mengenai jadwal dan cara interview akan segera kami kirimkan melalui email ini atau kontak Anda.</p>
+    <p><strong>Detail Interview:</strong></p>
+    <ul>
+        <li><strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($appliedJob->interview_date)->format('d F Y') }}</li>
+        <li><strong>Waktu:</strong> {{ $appliedJob->interview_time }}</li>
+        <li><strong>Link Interview:</strong> <a href="{{ $appliedJob->interview_link }}" target="_blank">{{ $appliedJob->interview_link }}</a></li>
+        @if($appliedJob->interview_message)
+        <li><strong>Pesan Tambahan:</strong> {{ $appliedJob->interview_message }}</li>
+        @endif
+    </ul>
+    
+    <p>Silakan bergabung tepat waktu menggunakan link yang telah disediakan.</p>
     
     <p>Terima kasih atas minat dan partisipasi Anda. Kami tunggu konfirmasi Anda!</p>
     

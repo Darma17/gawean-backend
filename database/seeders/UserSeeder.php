@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
         // Admin User
         User::create([
             'nama' => 'Admin Gawean',
-            'email' => 'admin@gawean.com',
+            'email' => 'damore.vel@gmail.com',
             'password' => Hash::make('password123'),
             'nomor_telepon' => '081234567890',
             'alamat' => 'Jl. Admin No. 1, Jakarta',
@@ -28,7 +28,7 @@ class UserSeeder extends Seeder
 
         User::create([
             'nama' => 'PT Pertamina (Persero)',
-            'email' => 'recruitment@pertamina.co.id',
+            'email' => 'darma1748darma@gmail.com',
             'password' => Hash::make('password123'),
             'nomor_telepon' => '0213815111',
             'alamat' => 'Jl. Medan Merdeka Timur No. 1A, Jakarta Pusat',
