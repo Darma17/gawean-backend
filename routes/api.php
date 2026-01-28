@@ -51,12 +51,16 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
     Route::get('/company/jobs/count', [JobController::class, 'countCompanyJobs']);
     Route::get('/company/jobs', [JobController::class, 'getCompanyJobs']);
     Route::get('/company/jobs/{jobId}', [JobController::class, 'getJobDetailCompany']);
+    Route::get('/company/jobs/{jobId}/accepted-applicants', [JobController::class, 'getJobAcceptedApplicants']);
     Route::post('/company/jobs', [JobController::class, 'store']);
+    Route::patch('/company/jobs/{jobId}', [JobController::class, 'update']);
+    Route::delete('/company/jobs/{jobId}', [JobController::class, 'destroy']);
     Route::get('/company/jobs/{jobId}/applicants', [JobController::class, 'getJobApplicants']);
     Route::get('/company/jobs/{jobId}/applicants/{applicantId}/detail', [JobController::class, 'getApplicantDetail']);
     Route::patch('/company/jobs/{jobId}/applicants/{applicantId}/status', [JobController::class, 'updateApplicantStatus']);
     Route::patch('/company/jobs/{jobId}/applicants/{applicantId}/reject', [JobController::class, 'rejectApplicant']);
     Route::get('/company/jobs/applicants/count', [JobController::class, 'countJobApplicants']);
+    Route::get('/company/accepted-applicants', [JobController::class, 'getAcceptedApplicants']);
 
     // Favorite Jobs routes
     Route::get('/favorites', [FavoriteJobController::class, 'index']);

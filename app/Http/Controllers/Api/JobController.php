@@ -182,6 +182,65 @@ class JobController extends Controller
     }
 
     /**
+     * Get all accepted applicants for a specific job created by the authenticated company
+     */
+    public function getJobAcceptedApplicants(Request $request, $jobId)
+    {
+        $user = $request->user();
+
+        // Pastikan user adalah perusahaan
+        if ($user->role !== 'perusahaan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak. Hanya perusahaan yang dapat mengakses.',
+            ], 403);
+        }
+
+        // Cek apakah job milik perusahaan ini
+        $job = Job::where('id', $jobId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$job) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pekerjaan tidak ditemukan atau tidak milik perusahaan Anda.',
+            ], 404);
+        }
+
+        // Get all accepted applicants for this specific job
+        $acceptedApplicants = AppliedJob::with(['user.userProfile.certificates'])
+            ->where('job_id', $jobId)
+            ->where('status', 'accepted')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        $data = $acceptedApplicants->map(function ($applied) {
+            $profile = $applied->user->userProfile;
+
+            return [
+                'id' => $applied->id,
+                'user_id' => $applied->user_id,
+                'nama' => $applied->user->nama,
+                'email' => $applied->user->email,
+                'nomor_telepon' => $applied->user->nomor_telepon,
+                'alamat' => $applied->user->alamat,
+                'cv' => $profile && $profile->cv ? asset('storage/' . $profile->cv) : null,
+                'ktp' => $profile && $profile->ktp ? asset('storage/' . $profile->ktp) : null,
+                'ijazah_terakhir' => $profile && $profile->ijazah_terakhir ? asset('storage/' . $profile->ijazah_terakhir) : null,
+                'portfolio_link' => $profile ? $profile->portfolio_link : null,
+                'accepted_at' => $applied->updated_at,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data kandidat diterima untuk pekerjaan ini berhasil diambil',
+            'data' => $data
+        ]);
+    }
+
+    /**
      * Get count of applicants for all jobs created by the authenticated company
      */
     public function countJobApplicants(Request $request)
@@ -221,6 +280,74 @@ class JobController extends Controller
                 'total_jobs' => $jobs->count(),
                 'job_applicants' => $jobApplicants,
             ],
+        ]);
+    }
+
+    /**
+     * Get all accepted applicants for the authenticated company
+     */
+    public function getAcceptedApplicants(Request $request)
+    {
+        $user = $request->user();
+
+        // Pastikan user adalah perusahaan
+        if ($user->role !== 'perusahaan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak. Hanya perusahaan yang dapat mengakses.',
+            ], 403);
+        }
+
+        // Get all accepted applicants for jobs created by this company
+        $acceptedApplicants = AppliedJob::with(['user.userProfile', 'job'])
+            ->whereHas('job', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->where('status', 'accepted')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        $data = $acceptedApplicants->map(function ($applied) {
+            $profile = $applied->user->userProfile;
+
+            return [
+                'id' => $applied->id,
+                'user_id' => $applied->user_id,
+                'nama' => $applied->user->nama,
+                'email' => $applied->user->email,
+                'nomor_telepon' => $applied->user->nomor_telepon,
+                'alamat' => $applied->user->alamat,
+                'foto_profile' => $applied->user->foto_profile ? asset('storage/' . $applied->user->foto_profile) : null,
+                'job' => [
+                    'id' => $applied->job->id,
+                    'title' => $applied->job->title,
+                    'lokasi_kerja' => $applied->job->lokasi_kerja,
+                    'tipe' => $applied->job->tipe,
+                    'gaji' => $applied->job->gaji,
+                ],
+                'accepted_at' => $applied->updated_at,
+                'profile' => $profile ? [
+                    'cv' => $profile->cv ? asset('storage/' . $profile->cv) : null,
+                    'ijazah_terakhir' => $profile->ijazah_terakhir ? asset('storage/' . $profile->ijazah_terakhir) : null,
+                    'ktp' => $profile->ktp ? asset('storage/' . $profile->ktp) : null,
+                    'portfolio_link' => $profile->portfolio_link,
+                    'certificates' => $profile->certificates->map(function ($cert) {
+                        return [
+                            'id' => $cert->id,
+                            'nama_sertifikat' => $cert->nama_sertifikat,
+                            'file' => $cert->file ? asset('storage/' . $cert->file) : null,
+                            'created_at' => $cert->created_at,
+                        ];
+                    }),
+                ] : null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data kandidat diterima berhasil diambil',
+            'data' => $data,
+            'total' => $data->count(),
         ]);
     }
 
@@ -295,6 +422,57 @@ class JobController extends Controller
     }
 
     /**
+     * Update a job created by the authenticated company
+     */
+    public function update(Request $request, $jobId)
+    {
+        $user = $request->user();
+
+        // Pastikan user adalah perusahaan
+        if ($user->role !== 'perusahaan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak. Hanya perusahaan yang dapat mengakses.',
+            ], 403);
+        }
+
+        // Cek apakah job milik perusahaan ini
+        $job = Job::where('id', $jobId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$job) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pekerjaan tidak ditemukan atau tidak milik perusahaan Anda.',
+            ], 404);
+        }
+
+        // Validasi input
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'lokasi_kerja' => 'required|string|max:255',
+            'tipe' => 'required|in:onsite,remote',
+            'jumlah_lowongan' => 'required|integer|min:1',
+            'bidang' => 'required|string|max:255',
+            'skill_yang_dibutuhkan' => 'required|string',
+            'gaji' => 'nullable|string|max:255',
+            'jadwal_kerja' => 'nullable|string|max:255',
+            'jam_kerja' => 'nullable|string|max:255',
+            'deskripsi' => 'nullable|string',
+        ]);
+
+        // Update job
+        $job->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pekerjaan berhasil diperbarui',
+            'data' => $job,
+        ]);
+    }
+
+    /**
      * Get applicants for a specific job created by the authenticated company
      */
     public function getJobApplicants(Request $request, $jobId)
@@ -335,6 +513,7 @@ class JobController extends Controller
                 'email' => $applied->user->email,
                 'nomor_telepon' => $applied->user->nomor_telepon,
                 'foto_profile' => $applied->user->foto_profile ? asset('storage/' . $applied->user->foto_profile) : null,
+                'alamat' => $applied->user->alamat,
                 'status' => $applied->status,
                 'applied_at' => $applied->created_at,
             ];
@@ -613,6 +792,47 @@ class JobController extends Controller
                 'status' => $appliedJob->status,
                 'applied_at' => $appliedJob->created_at,
             ],
+        ]);
+    }
+
+    /**
+     * Delete a job created by the authenticated company
+     */
+    public function destroy(Request $request, $jobId)
+    {
+        $user = $request->user();
+
+        // Pastikan user adalah perusahaan
+        if ($user->role !== 'perusahaan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak. Hanya perusahaan yang dapat mengakses.',
+            ], 403);
+        }
+
+        // Cek apakah job milik perusahaan ini
+        $job = Job::where('id', $jobId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        // Cek apakah ada applicants yang masih aktif (belum cancelled, rejected, atau accepted)
+        $activeApplicants = AppliedJob::where('job_id', $jobId)
+            ->whereNotIn('status', ['cancelled', 'rejected', 'accepted'])
+            ->count();
+
+        if ($activeApplicants > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat menghapus pekerjaan yang masih memiliki pelamar aktif.',
+            ], 400);
+        }
+
+        // Hapus job
+        $job->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pekerjaan berhasil dihapus',
         ]);
     }
 }
