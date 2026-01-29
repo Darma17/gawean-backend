@@ -15,14 +15,21 @@ class OtpMail extends Mailable
 
     public $otp;
     public $userName;
+    public $type;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($otp, $userName)
+    public function __construct($otp, $userNameOrType, $type = null)
     {
         $this->otp = $otp;
-        $this->userName = $userName;
+        if ($type) {
+            $this->userName = $userNameOrType;
+            $this->type = $type;
+        } else {
+            $this->userName = $userNameOrType;
+            $this->type = 'login';
+        }
     }
 
     /**
@@ -30,8 +37,12 @@ class OtpMail extends Mailable
      */
     public function envelope(): Envelope
     {
+        $subject = $this->type === 'reset' 
+            ? 'Kode OTP Reset Password - Gawean'
+            : 'Kode OTP Verifikasi - Gawean';
+            
         return new Envelope(
-            subject: 'Kode OTP Verifikasi - Gawean',
+            subject: $subject,
         );
     }
 

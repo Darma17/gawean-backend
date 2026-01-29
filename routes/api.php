@@ -28,6 +28,15 @@ Route::prefix('user')->group(function () {
     
     // Register user baru
     Route::post('/register', [AuthController::class, 'register']);
+    
+    // Forgot password - kirim OTP
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    
+    // Verifikasi OTP untuk reset password
+    Route::post('/verify-reset-otp', [AuthController::class, 'verifyResetOtp']);
+    
+    // Reset password
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
 
 // Route yang memerlukan autentikasi

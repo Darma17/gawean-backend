@@ -40,6 +40,7 @@ class AppliedJobController extends Controller
                         'gaji' => $applied->job->gaji,
                     ] : null,
                     'applied_at' => $applied->created_at,
+                    'updated_at' => $applied->updated_at,
                 ];
             }),
         ]);
@@ -80,6 +81,18 @@ class AppliedJobController extends Controller
 
         $userId = $request->user()->id;
         $jobId = $validated['job_id'];
+
+        // Check if user already has an accepted job
+        $hasAcceptedJob = AppliedJob::where('user_id', $userId)
+            ->where('status', 'accepted')
+            ->exists();
+
+        if ($hasAcceptedJob) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda sudah menerima penawaran pekerjaan. Tidak dapat melamar pekerjaan baru.',
+            ], 422);
+        }
 
         // Check if user already has 5 applied jobs (excluding cancelled and rejected)
         $appliedCount = AppliedJob::where('user_id', $userId)
@@ -270,6 +283,12 @@ class AppliedJobController extends Controller
 
         // Kurangi jumlah lowongan
         $appliedJob->job->decrement('jumlah_lowongan');
+
+        // Batalkan semua lamaran pekerjaan lainnya yang masih aktif
+        AppliedJob::where('user_id', $request->user()->id)
+            ->where('id', '!=', $id)
+            ->whereNotIn('status', ['accepted', 'rejected', 'cancelled'])
+            ->update(['status' => 'cancelled']);
 
         return response()->json([
             'success' => true,

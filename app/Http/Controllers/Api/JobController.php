@@ -60,6 +60,45 @@ class JobController extends Controller
     }
 
     /**
+     * Get job detail by ID (public access)
+     */
+    public function show(Request $request, $id)
+    {
+        $job = Job::with('user')->find($id);
+
+        if (!$job) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lowongan kerja tidak ditemukan',
+            ], 404);
+        }
+
+        $data = [
+            'id' => $job->id,
+            'title' => $job->title,
+            'nama_perusahaan' => $job->user->nama,
+            'foto_perusahaan' => $job->user->foto_profile ? asset('storage/' . $job->user->foto_profile) : null,
+            'tipe' => $job->tipe,
+            'lokasi_kerja' => $job->lokasi_kerja,
+            'jumlah_lowongan' => $job->jumlah_lowongan,
+            'bidang' => $job->bidang,
+            'skill_yang_dibutuhkan' => $job->skill_yang_dibutuhkan,
+            'gaji' => $job->gaji,
+            'jadwal_kerja' => $job->jadwal_kerja,
+            'jam_kerja' => $job->jam_kerja,
+            'deskripsi' => $job->deskripsi,
+            'created_at' => $job->created_at,
+            'updated_at' => $job->updated_at,
+        ];
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail lowongan berhasil diambil',
+            'data' => $data,
+        ]);
+    }
+
+    /**
      * Get count of jobs created by the authenticated company
      */
     public function countCompanyJobs(Request $request)
